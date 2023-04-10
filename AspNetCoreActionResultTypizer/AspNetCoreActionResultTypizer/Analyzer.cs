@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.ComponentModel.Design.Serialization;
 using System.Linq;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -34,21 +36,38 @@ public class AspNetCoreActionResultTypizerAnalyzer : DiagnosticAnalyzer
         context.RegisterSyntaxNodeAction(AnalyzeNode, SyntaxKind.MethodDeclaration);
     }
 
-    private void AnalyzeNode(SyntaxNodeAnalysisContext context)
+    public class AnalysisInfo
     {
-        var methodDeclaration = (MethodDeclarationSyntax) context.Node;
+        bool IsReturnTypeTask;
+        ITypeSymbol ArgumentType;
+        ITypeSymbol MethodReturnType;
+
+        public AnalysisInfo(bool isReturnTypeTask, ITypeSymbol argumentType, ITypeSymbol methodReturnType)
+        {
+            IsReturnTypeTask = isReturnTypeTask;
+            ArgumentType = argumentType;
+            MethodReturnType = methodReturnType;
+        }
+    }
+
+    public AnalysisInfo? GetAnalysisInfo(
+        Compilation compilation,
+        SemanticModel semanticModel,
+        MethodDeclarationSyntax methodDeclaration,
+        CancellationToken cancellationToken)
+    {
         var returnTypeSyntax = methodDeclaration.ReturnType;
-        var returnType = context.SemanticModel.GetTypeInfo(returnTypeSyntax, context.CancellationToken).ConvertedType as INamedTypeSymbol;
+        var returnType = semanticModel.GetTypeInfo(returnTypeSyntax, cancellationToken).ConvertedType as INamedTypeSymbol;
         if (returnType is null)
-            return;
-        var iActionResultSymbol = context.Compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Mvc.IActionResult");
+            return null;
+        var iActionResultSymbol = compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Mvc.IActionResult");
         bool IsReturnTypeActionResult()
         {
             return SymbolEqualityComparer.Default.Equals(returnType, iActionResultSymbol);
         }
         bool IsReturnTypeTaskOfActionResult()
         {
-            var taskSymbol = context.Compilation.GetTypeByMetadataName("System.Threading.Tasks.Task");
+            var taskSymbol = compilation.GetTypeByMetadataName("System.Threading.Tasks.Task");
             if (taskSymbol is null)
                 throw new Exception("Expected to find System.Threading.Tasks.Task");
             if (!SymbolEqualityComparer.Default.Equals(returnType, taskSymbol))
@@ -63,27 +82,27 @@ public class AspNetCoreActionResultTypizerAnalyzer : DiagnosticAnalyzer
         else if (IsReturnTypeTaskOfActionResult())
             isReturnTypeTask = true;
         else
-            return;
+            return null;
 
         if (isReturnTypeTask
             && !methodDeclaration.Modifiers.Any(SyntaxKind.AsyncKeyword))
         {
-            throw new Exception("Method is not async but return type is Task<IActionResult>");
+            return null;
         }
         
         // check if method is in a controller
-        var controllerBaseSymbol = context.Compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Mvc.ControllerBase");
+        var controllerBaseSymbol = compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Mvc.ControllerBase");
         if (controllerBaseSymbol is null)
             throw new Exception("Expected to find Microsoft.AspNetCore.Mvc.ControllerBase");
                 
         var classDeclaration = methodDeclaration.Parent as ClassDeclarationSyntax;
         if (classDeclaration == null)
-            return;
-        var classSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclaration, context.CancellationToken);
+            return null;
+        var classSymbol = semanticModel.GetDeclaredSymbol(classDeclaration, cancellationToken);
         if (classSymbol is null)
-            return;
+            return null;
         if (!classSymbol.AllInterfaces.Contains(controllerBaseSymbol))
-            return;
+            return null;
 
         // Get the Ok method symbol of the controller class
         var okMethodSymbol = controllerBaseSymbol.GetMembers("Ok").OfType<IMethodSymbol>().First();
@@ -93,7 +112,7 @@ public class AspNetCoreActionResultTypizerAnalyzer : DiagnosticAnalyzer
         {
             return invocation.Expression is NameSyntax nameSyntax
                 // resolve the method in the current class context
-                && context.SemanticModel.GetSymbolInfo(nameSyntax, context.CancellationToken).Symbol is
+                && semanticModel.GetSymbolInfo(nameSyntax, cancellationToken).Symbol is
                     IMethodSymbol methodSymbol
                 && SymbolEqualityComparer.Default.Equals(methodSymbol, okMethodSymbol);
         }
@@ -120,21 +139,27 @@ public class AspNetCoreActionResultTypizerAnalyzer : DiagnosticAnalyzer
             }
         }
         if (okInvocation is null)
-            return;
+            return null;
         
         // Get the argument type passed into the Ok method
         var argument = okInvocation.ArgumentList.Arguments.FirstOrDefault();
         if (argument is null)
-            return;
+            return null;
         
-        var argumentType = context.SemanticModel.GetTypeInfo(argument.Expression, context.CancellationToken).ConvertedType;
+        var argumentType = semanticModel.GetTypeInfo(argument.Expression, cancellationToken).ConvertedType;
         if (argumentType is null)
-            return;
+            return null;
 
-        if (isReturnTypeTask)
-        {
-            
-        }
+        return new AnalysisInfo(isReturnTypeTask, argumentType, returnType);
+    }
+    
+    private void AnalyzeNode(SyntaxNodeAnalysisContext context)
+    {
+        var methodDeclaration = (MethodDeclarationSyntax) context.Node;
+        var analysisInfo = GetAnalysisInfo(context.Compilation, context.SemanticModel,methodDeclaration, context.CancellationToken);
+
+        if (analysisInfo is null)
+            return;
 
         context.ReportDiagnostic(Diagnostic.Create(_Rule, context.Node.GetLocation()));
     }

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Xunit;
 
@@ -19,7 +14,24 @@ public class AspNetCoreActionResultTypizerUnitTest
     }
 
     [Fact]
-    public async Task VarStringDeclarationCouldBeConstant_Diagnostic()
+    public async Task IfActionReturnsIActionResult_DiagnosticIsGenerated()
+    {
+        var document = _project.AddDocument("TestDocument", """
+            using Microsoft.AspNetCore.Mvc;
+            public class MyController : Controller
+            {
+                public IActionResult MyAction()
+                {
+                    var x = "Hello World";
+                    return Ok(x);
+                }
+            }
+        """);
+        await Helper.AssertDiagnostics(document, AspNetCoreActionResultTypizerAnalyzer.DiagnosticId);
+    }
+
+    [Fact]
+    public async Task IfActionReturnsTaskOfIActionResult_DiagnosticIsGenerated()
     {
         var document = _project.AddDocument("TestDocument", """
             using Microsoft.AspNetCore.Mvc;
