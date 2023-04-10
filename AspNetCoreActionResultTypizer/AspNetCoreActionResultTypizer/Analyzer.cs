@@ -1,4 +1,7 @@
-﻿using System.Collections.Immutable;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -28,76 +31,109 @@ public class AspNetCoreActionResultTypizerAnalyzer : DiagnosticAnalyzer
         // https://github.com/dotnet/roslyn/blob/main/docs/analyzers/Analyzer%20Actions%20Semantics.md
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
         context.EnableConcurrentExecution();
-        context.RegisterSyntaxNodeAction(AnalyzeNode, SyntaxKind.LocalDeclarationStatement);
+        context.RegisterSyntaxNodeAction(AnalyzeNode, SyntaxKind.MethodDeclaration);
     }
 
     private void AnalyzeNode(SyntaxNodeAnalysisContext context)
     {
-        var localDeclaration = (LocalDeclarationStatementSyntax)context.Node;
-
-        // make sure the declaration isn't already const:
-        if (localDeclaration.Modifiers.Any(SyntaxKind.ConstKeyword))
-        {
+        var methodDeclaration = (MethodDeclarationSyntax) context.Node;
+        var returnTypeSyntax = methodDeclaration.ReturnType;
+        var returnType = context.SemanticModel.GetTypeInfo(returnTypeSyntax, context.CancellationToken).ConvertedType as INamedTypeSymbol;
+        if (returnType is null)
             return;
+        var iActionResultSymbol = context.Compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Mvc.IActionResult");
+        bool IsReturnTypeActionResult()
+        {
+            return SymbolEqualityComparer.Default.Equals(returnType, iActionResultSymbol);
+        }
+        bool IsReturnTypeTaskOfActionResult()
+        {
+            var taskSymbol = context.Compilation.GetTypeByMetadataName("System.Threading.Tasks.Task");
+            if (taskSymbol is null)
+                throw new Exception("Expected to find System.Threading.Tasks.Task");
+            if (!SymbolEqualityComparer.Default.Equals(returnType, taskSymbol))
+                return false;
+            var taskTypeArgument = returnType!.TypeArguments.FirstOrDefault();
+            return SymbolEqualityComparer.Default.Equals(taskTypeArgument, iActionResultSymbol);
         }
 
-        TypeSyntax variableTypeName = localDeclaration.Declaration.Type;
-        ITypeSymbol variableType = context.SemanticModel.GetTypeInfo(variableTypeName, context.CancellationToken).ConvertedType;
+        bool isReturnTypeTask;
+        if (IsReturnTypeActionResult())
+            isReturnTypeTask = false;
+        else if (IsReturnTypeTaskOfActionResult())
+            isReturnTypeTask = true;
+        else
+            return;
 
-        // Ensure that all variables in the local declaration have initializers that
-        // are assigned with constant values.
-        foreach (VariableDeclaratorSyntax variable in localDeclaration.Declaration.Variables)
+        if (isReturnTypeTask
+            && !methodDeclaration.Modifiers.Any(SyntaxKind.AsyncKeyword))
         {
-            EqualsValueClauseSyntax initializer = variable.Initializer;
-            if (initializer == null)
-            {
-                return;
-            }
+            throw new Exception("Method is not async but return type is Task<IActionResult>");
+        }
+        
+        // check if method is in a controller
+        var controllerBaseSymbol = context.Compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Mvc.ControllerBase");
+        if (controllerBaseSymbol is null)
+            throw new Exception("Expected to find Microsoft.AspNetCore.Mvc.ControllerBase");
+                
+        var classDeclaration = methodDeclaration.Parent as ClassDeclarationSyntax;
+        if (classDeclaration == null)
+            return;
+        var classSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclaration, context.CancellationToken);
+        if (classSymbol is null)
+            return;
+        if (!classSymbol.AllInterfaces.Contains(controllerBaseSymbol))
+            return;
 
-            Optional<object> constantValue = context.SemanticModel.GetConstantValue(initializer.Value, context.CancellationToken);
-            if (!constantValue.HasValue)
-            {
-                return;
-            }
+        // Get the Ok method symbol of the controller class
+        var okMethodSymbol = controllerBaseSymbol.GetMembers("Ok").OfType<IMethodSymbol>().First();
+        InvocationExpressionSyntax? okInvocation = null;
 
-            // Ensure that the initializer value can be converted to the type of the
-            // local declaration without a user-defined conversion.
-            Conversion conversion = context.SemanticModel.ClassifyConversion(initializer.Value, variableType);
-            if (!conversion.Exists || conversion.IsUserDefined)
-            {
-                return;
-            }
-
-            // Special cases:
-            //  * If the constant value is a string, the type of the local declaration
-            //    must be System.String.
-            //  * If the constant value is null, the type of the local declaration must
-            //    be a reference type.
-            if (constantValue.Value is string)
-            {
-                if (variableType.SpecialType != SpecialType.System_String)
-                {
-                    return;
-                }
-            }
-            else if (variableType.IsReferenceType && constantValue.Value != null)
-            {
-                return;
-            }
+        bool CheckIsInvocationOk(InvocationExpressionSyntax invocation)
+        {
+            return invocation.Expression is NameSyntax nameSyntax
+                // resolve the method in the current class context
+                && context.SemanticModel.GetSymbolInfo(nameSyntax, context.CancellationToken).Symbol is
+                    IMethodSymbol methodSymbol
+                && SymbolEqualityComparer.Default.Equals(methodSymbol, okMethodSymbol);
         }
 
-        // Perform data flow analysis on the local declaration.
-        DataFlowAnalysis dataFlowAnalysis = context.SemanticModel.AnalyzeDataFlow(localDeclaration);
-
-        foreach (VariableDeclaratorSyntax variable in localDeclaration.Declaration.Variables)
         {
-            // Retrieve the local symbol for each variable in the local declaration
-            // and ensure that it is not written outside of the data flow analysis region.
-            ISymbol variableSymbol = context.SemanticModel.GetDeclaredSymbol(variable, context.CancellationToken);
-            if (dataFlowAnalysis.WrittenOutside.Contains(variableSymbol))
+            var block = methodDeclaration.Body;
+            if (block is not null)
             {
-                return;
+                okInvocation = block
+                    .DescendantNodes()
+                    .OfType<ReturnStatementSyntax>()
+                    .Select(x => x.Expression)
+                    .OfType<InvocationExpressionSyntax>()
+                    .Where(CheckIsInvocationOk)
+                    .FirstOrDefault();
             }
+        }
+        {
+            var arrowExpression = methodDeclaration.ExpressionBody;
+            if (arrowExpression is { Expression: InvocationExpressionSyntax invocation }
+                && CheckIsInvocationOk(invocation))
+            {
+                okInvocation = invocation; 
+            }
+        }
+        if (okInvocation is null)
+            return;
+        
+        // Get the argument type passed into the Ok method
+        var argument = okInvocation.ArgumentList.Arguments.FirstOrDefault();
+        if (argument is null)
+            return;
+        
+        var argumentType = context.SemanticModel.GetTypeInfo(argument.Expression, context.CancellationToken).ConvertedType;
+        if (argumentType is null)
+            return;
+
+        if (isReturnTypeTask)
+        {
+            
         }
 
         context.ReportDiagnostic(Diagnostic.Create(_Rule, context.Node.GetLocation()));
