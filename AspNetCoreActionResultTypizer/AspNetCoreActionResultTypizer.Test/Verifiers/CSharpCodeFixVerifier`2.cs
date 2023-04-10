@@ -32,18 +32,19 @@ namespace AspNetCoreActionResultTypizer.Test
         /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyAnalyzerAsync(string, DiagnosticResult[])"/>
         public static async Task VerifyAnalyzerAsync(string source, params DiagnosticResult[] expected)
         {
-            // var t = typeof(Controller);
-            // var controllerAssembly = t.Assembly;
-            // var additionalNames = new[]{controllerAssembly}.Select(r => r.Location);
-            // var namesArray = ImmutableArray.Create(additionalNames.ToArray()); 
-            var packages = ImmutableArray.Create(new[]
-            {
-                new PackageIdentity("Swashbuckle.AspNetCore", "6.5.0"),
-            });
+            var t = typeof(Controller);
+            var controllerAssembly = t.Assembly;
+            var additionalNames = new[]{controllerAssembly.Location};
+            var namesArray = ImmutableArray.Create(additionalNames); 
+            // var packages = ImmutableArray.Create(new[]
+            // {
+            //     new PackageIdentity("Swashbuckle.AspNetCore", "6.5.0"),
+            // });
+            var referenceAssemblies = ReferenceAssemblies.Default.AddAssemblies(namesArray);
             var test = new Test
             {
                 TestCode = source,
-                ReferenceAssemblies = ReferenceAssemblies.Default.AddPackages(packages),
+                ReferenceAssemblies = referenceAssemblies,
             };
 
             test.ExpectedDiagnostics.AddRange(expected);
