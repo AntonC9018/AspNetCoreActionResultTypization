@@ -1,18 +1,23 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using VerifyCS = AspNetCoreActionResultTypizer.Test.CSharpCodeFixVerifier<
-    AspNetCoreActionResultTypizer.AspNetCoreActionResultTypizerAnalyzer,
-    AspNetCoreActionResultTypizer.AspNetCoreActionResultTypizerCodeFixProvider>;
 
-namespace AspNetCoreActionResultTypizer.Test
+namespace AspNetCoreActionResultTypizer.Test;
+
+using VerifyCS = CSharpCodeFixVerifier<AspNetCoreActionResultTypizerAnalyzer, AspNetCoreActionResultTypizerCodeFixProvider>;
+
+
+[TestClass]
+public class AspNetCoreActionResultTypizerUnitTest
 {
-    [TestClass]
-    public class AspNetCoreActionResultTypizerUnitTest
+    public void Setup()
     {
-        [TestMethod]
-        public async Task VariableIsAssigned_NoDiagnostic()
-        {
-            await VerifyCS.VerifyAnalyzerAsync(@"
+        
+    }
+    
+    [TestMethod]
+    public async Task VariableIsAssigned_NoDiagnostic()
+    {
+        await VerifyCS.VerifyAnalyzerAsync(@"
 using System;
 
 class Program
@@ -24,12 +29,12 @@ class Program
     }
 }
 ");
-        }
+    }
 
-        [TestMethod]
-        public async Task VariableIsAlreadyConst_NoDiagnostic()
-        {
-            await VerifyCS.VerifyAnalyzerAsync(@"
+    [TestMethod]
+    public async Task VariableIsAlreadyConst_NoDiagnostic()
+    {
+        await VerifyCS.VerifyAnalyzerAsync(@"
 using System;
 
 class Program
@@ -41,12 +46,12 @@ class Program
     }
 }
 ");
-        }
+    }
 
-        [TestMethod]
-        public async Task NoInitializer_NoDiagnostic()
-        {
-            await VerifyCS.VerifyAnalyzerAsync(@"
+    [TestMethod]
+    public async Task NoInitializer_NoDiagnostic()
+    {
+        await VerifyCS.VerifyAnalyzerAsync(@"
 using System;
 
 class Program
@@ -59,12 +64,12 @@ class Program
     }
 }
 ");
-        }
+    }
 
-        [TestMethod]
-        public async Task InitializerIsNotConstant_NoDiagnostic()
-        {
-            await VerifyCS.VerifyAnalyzerAsync(@"
+    [TestMethod]
+    public async Task InitializerIsNotConstant_NoDiagnostic()
+    {
+        await VerifyCS.VerifyAnalyzerAsync(@"
 using System;
 
 class Program
@@ -76,12 +81,12 @@ class Program
     }
 }
 ");
-        }
+    }
 
-        [TestMethod]
-        public async Task MultipleInitializers_NoDiagnostic()
-        {
-            await VerifyCS.VerifyAnalyzerAsync(@"
+    [TestMethod]
+    public async Task MultipleInitializers_NoDiagnostic()
+    {
+        await VerifyCS.VerifyAnalyzerAsync(@"
 using System;
 
 class Program
@@ -94,12 +99,12 @@ class Program
     }
 }
 ");
-        }
+    }
 
-        [TestMethod]
-        public async Task DeclarationIsInvalid_NoDiagnostic()
-        {
-            await VerifyCS.VerifyAnalyzerAsync(@"
+    [TestMethod]
+    public async Task DeclarationIsInvalid_NoDiagnostic()
+    {
+        await VerifyCS.VerifyAnalyzerAsync(@"
 using System;
 
 class Program
@@ -110,12 +115,12 @@ class Program
     }
 }
 ");
-        }
+    }
 
-        [TestMethod]
-        public async Task DeclarationIsNotString_NoDiagnostic()
-        {
-            await VerifyCS.VerifyAnalyzerAsync(@"
+    [TestMethod]
+    public async Task DeclarationIsNotString_NoDiagnostic()
+    {
+        await VerifyCS.VerifyAnalyzerAsync(@"
 using System;
 
 class Program
@@ -126,12 +131,12 @@ class Program
     }
 }
 ");
-        }
+    }
 
-        [TestMethod]
-        public async Task LocalIntCouldBeConstant_Diagnostic()
-        {
-            await VerifyCS.VerifyCodeFixAsync(@"
+    [TestMethod]
+    public async Task LocalIntCouldBeConstant_Diagnostic()
+    {
+        await VerifyCS.VerifyCodeFixAsync(@"
 using System;
 
 class Program
@@ -154,12 +159,12 @@ class Program
     }
 }
 ");
-        }
+    }
 
-        [TestMethod]
-        public async Task StringCouldBeConstant_Diagnostic()
-        {
-            await VerifyCS.VerifyCodeFixAsync(@"
+    [TestMethod]
+    public async Task StringCouldBeConstant_Diagnostic()
+    {
+        await VerifyCS.VerifyCodeFixAsync(@"
 using System;
 
 class Program
@@ -180,12 +185,12 @@ class Program
     }
 }
 ");
-        }
+    }
 
-        [TestMethod]
-        public async Task VarIntDeclarationCouldBeConstant_Diagnostic()
-        {
-            await VerifyCS.VerifyCodeFixAsync(@"
+    [TestMethod]
+    public async Task VarIntDeclarationCouldBeConstant_Diagnostic()
+    {
+        await VerifyCS.VerifyCodeFixAsync(@"
 using System;
 
 class Program
@@ -206,12 +211,12 @@ class Program
     }
 }
 ");
-        }
+    }
 
-        [TestMethod]
-        public async Task VarStringDeclarationCouldBeConstant_Diagnostic()
-        {
-            await VerifyCS.VerifyCodeFixAsync(@"
+    [TestMethod]
+    public async Task VarStringDeclarationCouldBeConstant_Diagnostic()
+    {
+        await VerifyCS.VerifyCodeFixAsync(@"
 using System;
 
 class Program
@@ -232,6 +237,5 @@ class Program
     }
 }
 ");
-        }
     }
 }
