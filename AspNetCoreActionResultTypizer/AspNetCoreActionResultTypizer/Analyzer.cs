@@ -60,20 +60,20 @@ public class AspNetCoreActionResultTypizerAnalyzer : DiagnosticAnalyzer
         var returnType = semanticModel.GetTypeInfo(returnTypeSyntax, cancellationToken).ConvertedType as INamedTypeSymbol;
         if (returnType is null)
             return null;
-        var iActionResultSymbol = compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Mvc.IActionResult");
+        var iActionResultSymbol = compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Mvc.IActionResult")!;
         bool IsReturnTypeActionResult()
         {
             return SymbolEqualityComparer.Default.Equals(returnType, iActionResultSymbol);
         }
         bool IsReturnTypeTaskOfActionResult()
         {
-            var taskSymbol = compilation.GetTypeByMetadataName("System.Threading.Tasks.Task");
+            var taskSymbol = compilation.GetTypeByMetadataName("System.Threading.Tasks.Task`1");
             if (taskSymbol is null)
                 throw new Exception("Expected to find System.Threading.Tasks.Task");
-            if (!SymbolEqualityComparer.Default.Equals(returnType, taskSymbol))
-                return false;
-            var taskTypeArgument = returnType!.TypeArguments.FirstOrDefault();
-            return SymbolEqualityComparer.Default.Equals(taskTypeArgument, iActionResultSymbol);
+            var taskOfIActionResult = taskSymbol.Construct(iActionResultSymbol);
+            if (SymbolEqualityComparer.Default.Equals(returnType, taskOfIActionResult))
+                return true;
+            return false;
         }
 
         bool isReturnTypeTask;
@@ -91,8 +91,8 @@ public class AspNetCoreActionResultTypizerAnalyzer : DiagnosticAnalyzer
         }
         
         // check if method is in a controller
-        var controllerSymbol = compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Mvc.ControllerBase");
-        if (controllerSymbol is null)
+        var controllerBaseSymbol = compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Mvc.ControllerBase");
+        if (controllerBaseSymbol is null)
             throw new Exception("Expected to find Microsoft.AspNetCore.Mvc.ControllerBase");
                 
         var classDeclaration = methodDeclaration.Parent as ClassDeclarationSyntax;
@@ -101,8 +101,6 @@ public class AspNetCoreActionResultTypizerAnalyzer : DiagnosticAnalyzer
         var classSymbol = semanticModel.GetDeclaredSymbol(classDeclaration, cancellationToken);
         if (classSymbol is null)
             return null;
-        
-        
         
         bool IsDerivedFromType(ITypeSymbol type, ITypeSymbol expectedBase)
         {
@@ -115,11 +113,11 @@ public class AspNetCoreActionResultTypizerAnalyzer : DiagnosticAnalyzer
 
             return false;
         }
-        if (!IsDerivedFromType(classSymbol, controllerSymbol))
+        if (!IsDerivedFromType(classSymbol, controllerBaseSymbol))
             return null;
 
         // Get the Ok method symbol of the controller class
-        var okMethodSymbol = controllerSymbol
+        var okMethodSymbol = controllerBaseSymbol
             .GetMembers("Ok")
             .OfType<IMethodSymbol>()
             .First(s => s.Parameters.Length == 1);

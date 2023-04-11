@@ -34,8 +34,8 @@ namespace AspNetCoreActionResultTypizer.Test
         // https://github.com/dotnet/roslyn-analyzers/blob/80eb21fba86dd2ac2522a052d0243136a3d2324c/src/Test.Utilities/AdditionalMetadataReferences.cs#L53
         public static ReferenceAssemblies DefaultWithAspNetCoreMvc { get; } = ReferenceAssemblies.Default
             .AddPackages(ImmutableArray.Create(
-                new PackageIdentity("Microsoft.AspNetCore", "1.1.7"),
-                new PackageIdentity("Microsoft.AspNetCore.Mvc", "1.1.8"),
-                new PackageIdentity("Microsoft.AspNetCore.Http", "1.1.2"))); 
+                new PackageIdentity("Microsoft.AspNetCore", "2.2.0"),
+                new PackageIdentity("Microsoft.AspNetCore.Mvc", "2.2.0"),
+                new PackageIdentity("Microsoft.AspNetCore.Http", "2.2.0"))); 
     }
 }

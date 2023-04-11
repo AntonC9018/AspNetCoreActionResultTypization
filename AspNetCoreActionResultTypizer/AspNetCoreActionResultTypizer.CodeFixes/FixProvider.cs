@@ -38,7 +38,12 @@ namespace AspNetCoreActionResultTypizer
             var diagnosticSpan = diagnostic.Location.SourceSpan;
 
             // Find the type declaration identified by the diagnostic.
-            var methodDeclaration = (MethodDeclarationSyntax) root.FindToken(diagnosticSpan.Start)!.Parent!;
+            var methodDeclaration = root
+                .FindToken(diagnosticSpan.Start)
+                .Parent!
+                .AncestorsAndSelf()
+                .OfType<MethodDeclarationSyntax>()
+                .First();
 
             var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken);
             var analysisInfo = AspNetCoreActionResultTypizerAnalyzer.GetAnalysisInfo(
@@ -97,10 +102,19 @@ namespace AspNetCoreActionResultTypizer
             }
             
             var format = new SymbolDisplayFormat(
-                typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameOnly,
+                typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes,
+                miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes,
                 genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters);
             var displayName = newReturnType.ToDisplayString(format);
             var newReturnTypeSyntax = ParseTypeName(displayName);
+            
+            {
+                var previousTriviaBefore = methodDeclaration.ReturnType.GetLeadingTrivia();
+                var previousTriviaAfter = methodDeclaration.ReturnType.GetTrailingTrivia();
+                newReturnTypeSyntax = newReturnTypeSyntax
+                    .WithLeadingTrivia(previousTriviaBefore)
+                    .WithTrailingTrivia(previousTriviaAfter); 
+            } 
             
             var newMethodDeclaration = methodDeclaration.WithReturnType(newReturnTypeSyntax);
             editor.ReplaceNode(methodDeclaration, newMethodDeclaration);

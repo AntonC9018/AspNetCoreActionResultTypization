@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using Xunit;
@@ -48,7 +49,7 @@ public class AspNetCoreActionResultTypizerUnitTest
                     return Ok(x);
                 }
             }
-        """, AnalyzerDiagnostic.WithSpan(5, 16, 5, 29));
+        """, AnalyzerDiagnostic.WithSpan(5,22, 5, 41));
     }
 
     [Fact]
@@ -81,7 +82,8 @@ public class AspNetCoreActionResultTypizerUnitTest
                     return Ok(x);
                 }
             }
-        """, """
+        """, AnalyzerDiagnostic.WithSpan(4, 16, 4, 29),
+            """
             using Microsoft.AspNetCore.Mvc;
             public class MyController : Controller
             {
@@ -108,7 +110,8 @@ public class AspNetCoreActionResultTypizerUnitTest
                     return Ok(x);
                 }
             }
-        """, """
+        """, AnalyzerDiagnostic.WithSpan(5, 22, 5, 41),
+            """
             using Microsoft.AspNetCore.Mvc;
             using System.Threading.Tasks;
             public class MyController : Controller
@@ -127,7 +130,7 @@ public class AspNetCoreActionResultTypizerUnitTest
     {
         await VerifyCS.VerifyCodeFixAsync("""
             using Microsoft.AspNetCore.Mvc;
-            public class GenericType<T>         
+            public class GenericType<T>
             {
                 public T Value { get; set; }
             } 
@@ -139,7 +142,8 @@ public class AspNetCoreActionResultTypizerUnitTest
                     return Ok(x);
                 }
             }
-        """, """
+        """, AnalyzerDiagnostic.WithSpan(8, 16, 8, 29),
+            """
             using Microsoft.AspNetCore.Mvc;
             public class GenericType<T>
             {
@@ -162,7 +166,7 @@ public class AspNetCoreActionResultTypizerUnitTest
         await VerifyCS.VerifyCodeFixAsync("""
             using Microsoft.AspNetCore.Mvc;
             using System.Threading.Tasks;
-            public class GenericType<T>         
+            public class GenericType<T>
             {
                 public T Value { get; set; }
             } 
@@ -174,7 +178,8 @@ public class AspNetCoreActionResultTypizerUnitTest
                     return Ok(x);
                 }
             }
-        """, """
+        """, AnalyzerDiagnostic.WithSpan(9, 22, 9, 41),
+            """
             using Microsoft.AspNetCore.Mvc;
             using System.Threading.Tasks;
             public class GenericType<T>
