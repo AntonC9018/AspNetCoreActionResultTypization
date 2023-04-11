@@ -64,21 +64,6 @@ namespace AspNetCoreActionResultTypizer
             AspNetCoreActionResultTypizerAnalyzer.AnalysisInfo analysisInfo,
             CancellationToken cancellationToken)
         {
-            static IEnumerable<INamespaceSymbol> GetAllNamespacesOfTypes(ITypeSymbol type)
-            {
-                if (type.ContainingNamespace is not null)
-                    yield return type.ContainingNamespace;
-                if (type is not INamedTypeSymbol namedTypeSymbol)
-                    yield break;
-                foreach (var genericTypeParameter in namedTypeSymbol.TypeArguments)
-                {
-                    foreach (var namespaceSymbol in GetAllNamespacesOfTypes(genericTypeParameter))
-                    {
-                        yield return namespaceSymbol;
-                    }
-                }
-            }
-            var namespacesThatShouldBeImported = GetAllNamespacesOfTypes(analysisInfo.ArgumentType);
             var editor = await DocumentEditor.CreateAsync(document, cancellationToken);
             
             var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
@@ -93,35 +78,14 @@ namespace AspNetCoreActionResultTypizer
                 newReturnType = taskType.Construct(resolvedActionResultType);
             else
                 newReturnType = resolvedActionResultType;  
-            
-            // Make sure Task is imported if we're dealing with an async func
-            if (analysisInfo.IsReturnTypeTask)
-            {
-                var taskNamespace = taskType.ContainingNamespace;
-                namespacesThatShouldBeImported = namespacesThatShouldBeImported.Append(taskNamespace);
-            }
-            
-            var format = new SymbolDisplayFormat(
-                typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes,
-                miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes,
-                genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters);
-            var displayName = newReturnType.ToDisplayString(format);
-            var newReturnTypeSyntax = ParseTypeName(displayName);
-            
-            {
-                var previousTriviaBefore = methodDeclaration.ReturnType.GetLeadingTrivia();
-                var previousTriviaAfter = methodDeclaration.ReturnType.GetTrailingTrivia();
-                newReturnTypeSyntax = newReturnTypeSyntax
-                    .WithLeadingTrivia(previousTriviaBefore)
-                    .WithTrailingTrivia(previousTriviaAfter); 
-            } 
-            
-            var newMethodDeclaration = methodDeclaration.WithReturnType(newReturnTypeSyntax);
-            editor.ReplaceNode(methodDeclaration, newMethodDeclaration);
 
-            // TODO: Add usings.
-            // var compilationUnit = methodDeclaration.Ancestors().OfType<CompilationUnitSyntax>().First();
-            // generator.AddNamespaceImports(compilationUnit, namespacesThatShouldBeImported.Select(UsingDirective()));
+            var generator = editor.Generator;
+            var typeSyntax = (TypeSyntax) generator.TypeExpression(newReturnType);
+            typeSyntax = typeSyntax.WithAdditionalAnnotations(Simplifier.AddImportsAnnotation);
+            typeSyntax = typeSyntax.WithTriviaFrom(methodDeclaration.ReturnType);
+            
+            var newMethodDeclaration = methodDeclaration.WithReturnType(typeSyntax);
+            editor.ReplaceNode(methodDeclaration, newMethodDeclaration);
             
             var newDocument = editor.GetChangedDocument();
             return newDocument;
