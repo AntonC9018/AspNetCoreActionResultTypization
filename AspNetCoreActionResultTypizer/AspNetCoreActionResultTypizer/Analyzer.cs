@@ -25,9 +25,9 @@ public class AspNetCoreActionResultTypizerAnalyzer : DiagnosticAnalyzer
 
     private static readonly DiagnosticDescriptor _Rule = new DiagnosticDescriptor(DiagnosticId, _Title, _MessageFormat, _Category, DiagnosticSeverity.Warning, isEnabledByDefault: true, description: _Description);
     private static readonly ImmutableArray<DiagnosticDescriptor> _SupportedDiagnostics = ImmutableArray.Create(_Rule);
+    public static DiagnosticDescriptor Rule => _Rule;
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => _SupportedDiagnostics;
-
     public override void Initialize(AnalysisContext context)
     {
         // https://github.com/dotnet/roslyn/blob/main/docs/analyzers/Analyzer%20Actions%20Semantics.md
@@ -91,8 +91,8 @@ public class AspNetCoreActionResultTypizerAnalyzer : DiagnosticAnalyzer
         }
         
         // check if method is in a controller
-        var controllerBaseSymbol = compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Mvc.ControllerBase");
-        if (controllerBaseSymbol is null)
+        var controllerSymbol = compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Mvc.ControllerBase");
+        if (controllerSymbol is null)
             throw new Exception("Expected to find Microsoft.AspNetCore.Mvc.ControllerBase");
                 
         var classDeclaration = methodDeclaration.Parent as ClassDeclarationSyntax;
@@ -101,11 +101,28 @@ public class AspNetCoreActionResultTypizerAnalyzer : DiagnosticAnalyzer
         var classSymbol = semanticModel.GetDeclaredSymbol(classDeclaration, cancellationToken);
         if (classSymbol is null)
             return null;
-        if (!classSymbol.AllInterfaces.Contains(controllerBaseSymbol))
+        
+        
+        
+        bool IsDerivedFromType(ITypeSymbol type, ITypeSymbol expectedBase)
+        {
+            do
+            {
+                if (SymbolEqualityComparer.Default.Equals(type, expectedBase))
+                    return true;
+            }
+            while ((type = type.BaseType!) is not null);
+
+            return false;
+        }
+        if (!IsDerivedFromType(classSymbol, controllerSymbol))
             return null;
 
         // Get the Ok method symbol of the controller class
-        var okMethodSymbol = controllerBaseSymbol.GetMembers("Ok").OfType<IMethodSymbol>().First();
+        var okMethodSymbol = controllerSymbol
+            .GetMembers("Ok")
+            .OfType<IMethodSymbol>()
+            .First(s => s.Parameters.Length == 1);
         InvocationExpressionSyntax? okInvocation = null;
 
         bool CheckIsInvocationOk(InvocationExpressionSyntax invocation)
@@ -114,7 +131,7 @@ public class AspNetCoreActionResultTypizerAnalyzer : DiagnosticAnalyzer
                 // resolve the method in the current class context
                 && semanticModel.GetSymbolInfo(nameSyntax, cancellationToken).Symbol is
                     IMethodSymbol methodSymbol
-                && SymbolEqualityComparer.Default.Equals(methodSymbol, okMethodSymbol);
+                && SymbolEqualityComparer.Default.Equals(methodSymbol.OriginalDefinition, okMethodSymbol);
         }
 
         {
@@ -146,10 +163,16 @@ public class AspNetCoreActionResultTypizerAnalyzer : DiagnosticAnalyzer
         if (argument is null)
             return null;
         
-        var argumentType = semanticModel.GetTypeInfo(argument.Expression, cancellationToken).ConvertedType;
+        var argumentType = semanticModel.GetTypeInfo(argument.Expression, cancellationToken).Type;
         if (argumentType is null)
             return null;
 
+        if (argumentType.SpecialType is SpecialType.System_Object
+            || argumentType.IsAnonymousType)
+        {
+            return null;
+        }
+        
         return new AnalysisInfo(isReturnTypeTask, argumentType, returnType);
     }
     
@@ -161,6 +184,6 @@ public class AspNetCoreActionResultTypizerAnalyzer : DiagnosticAnalyzer
         if (analysisInfo is null)
             return;
 
-        context.ReportDiagnostic(Diagnostic.Create(_Rule, context.Node.GetLocation()));
+        context.ReportDiagnostic(Diagnostic.Create(_Rule, methodDeclaration.ReturnType.GetLocation()));
     }
 }

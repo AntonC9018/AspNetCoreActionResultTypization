@@ -1,8 +1,11 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Testing;
 using Xunit;
 
 namespace AspNetCoreActionResultTypizer.Test;
+
+using VerifyCS = CSharpCodeFixVerifier<AspNetCoreActionResultTypizerAnalyzer, AspNetCoreActionResultTypizerCodeFixProvider>;
 
 public class AspNetCoreActionResultTypizerUnitTest
 {
@@ -13,10 +16,12 @@ public class AspNetCoreActionResultTypizerUnitTest
         _project = Helper.CreateDefaultProject();
     }
 
+    private static readonly DiagnosticResult AnalyzerDiagnostic =
+        new(AspNetCoreActionResultTypizerAnalyzer.Rule);
     [Fact]
     public async Task IfActionReturnsIActionResult_DiagnosticIsGenerated()
     {
-        var document = _project.AddDocument("TestDocument", """
+        await VerifyCS.VerifyAnalyzerAsync("""
             using Microsoft.AspNetCore.Mvc;
             public class MyController : Controller
             {
@@ -26,14 +31,13 @@ public class AspNetCoreActionResultTypizerUnitTest
                     return Ok(x);
                 }
             }
-        """);
-        await Helper.AssertDiagnostics(document, AspNetCoreActionResultTypizerAnalyzer.DiagnosticId);
+        """, AnalyzerDiagnostic.WithSpan(4, 16, 4, 29));
     }
 
     [Fact]
     public async Task IfActionReturnsTaskOfIActionResult_DiagnosticIsGenerated()
     {
-        var document = _project.AddDocument("TestDocument", """
+        await VerifyCS.VerifyAnalyzerAsync("""
             using Microsoft.AspNetCore.Mvc;
             public class MyController : Controller
             {
@@ -43,7 +47,6 @@ public class AspNetCoreActionResultTypizerUnitTest
                     return Ok(x);
                 }
             }
-        """);
-        await Helper.AssertDiagnostics(document, AspNetCoreActionResultTypizerAnalyzer.DiagnosticId);
+        """, AnalyzerDiagnostic.WithSpan(4, 16, 4, 29));
     }
 }

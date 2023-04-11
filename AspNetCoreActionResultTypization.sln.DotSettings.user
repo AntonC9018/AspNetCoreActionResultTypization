@@ -1,5 +1,17 @@
 ﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
-	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=48ef1fe3_002D442a_002D4c62_002D8793_002D2c00b4d856ba/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from &amp;lt;AspNetCoreActionResultTypizer.Test&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=0ede51ce_002D80a5_002D4bb2_002D8e3e_002D0acdeee3e645/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="All tests from &amp;lt;AspNetCoreActionResultTypizer.Test&amp;gt; #5" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;Project Location="D:\work\AspNetCoreActionResultTypization\AspNetCoreActionResultTypizer\AspNetCoreActionResultTypizer.Test" Presentation="&amp;lt;AspNetCoreActionResultTypizer.Test&amp;gt;" /&gt;&#xD;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=48ef1fe3_002D442a_002D4c62_002D8793_002D2c00b4d856ba/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="All tests from &amp;lt;AspNetCoreActionResultTypizer.Test&amp;gt;" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;Project Location="D:\work\AspNetCoreActionResultTypization\AspNetCoreActionResultTypizer\AspNetCoreActionResultTypizer.Test" Presentation="&amp;lt;AspNetCoreActionResultTypizer.Test&amp;gt;" /&gt;&#xD;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=4945463d_002D15ff_002D4054_002D83e4_002D770dbf779fdc/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="All tests from &amp;lt;AspNetCoreActionResultTypizer.Test&amp;gt; #4" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;Project Location="D:\work\AspNetCoreActionResultTypization\AspNetCoreActionResultTypizer\AspNetCoreActionResultTypizer.Test" Presentation="&amp;lt;AspNetCoreActionResultTypizer.Test&amp;gt;" /&gt;&#xD;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=5ef3fed5_002D6e70_002D446e_002D8aa6_002D43e410fbf3e6/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="All tests from &amp;lt;AspNetCoreActionResultTypizer.Test&amp;gt; #3" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;Project Location="D:\work\AspNetCoreActionResultTypization\AspNetCoreActionResultTypizer\AspNetCoreActionResultTypizer.Test" Presentation="&amp;lt;AspNetCoreActionResultTypizer.Test&amp;gt;" /&gt;&#xD;
+&lt;/SessionState&gt;</s:String>
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=98fc84d4_002D1e8a_002D4ed4_002Dbc13_002D7712ed76e3b8/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="All tests from &amp;lt;AspNetCoreActionResultTypizer.Test&amp;gt; #2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
   &lt;Project Location="D:\work\AspNetCoreActionResultTypization\AspNetCoreActionResultTypizer\AspNetCoreActionResultTypizer.Test" Presentation="&amp;lt;AspNetCoreActionResultTypizer.Test&amp;gt;" /&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
 	<s:Boolean x:Key="/Default/ResxEditorPersonal/CheckedGroups/=AspNetCoreActionResultTypizer_002FResources/@EntryIndexedValue">True</s:Boolean>

@@ -84,6 +84,5 @@ public static class Helper
             yield return reference;
         foreach (var loadedAssembly in referencedAssemblies)
             yield return MetadataReference.CreateFromFile(Assembly.Load(loadedAssembly).Location);
-        yield return MetadataReference.CreateFromFile(typeof());
     }
 }
