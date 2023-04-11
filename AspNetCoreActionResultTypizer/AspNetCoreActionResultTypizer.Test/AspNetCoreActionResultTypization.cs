@@ -196,4 +196,43 @@ public class AspNetCoreActionResultTypizerUnitTest
             }
         """);
     }
+
+    [Fact]
+    public async Task MultipleActionsGetFixedAtOnce()
+    {
+        await VerifyCS.VerifyCodeFixAsync("""
+            using Microsoft.AspNetCore.Mvc;
+            public class MyController : Controller
+            {
+                public IActionResult A()
+                {
+                    return Ok("String");
+                }
+
+                public IActionResult B()
+                {
+                    return Ok(123);
+                }
+            }
+        """, new[]
+            { 
+                AnalyzerDiagnostic.WithSpan(4, 16, 4, 29),
+                AnalyzerDiagnostic.WithSpan(9, 16, 9, 29),
+            },
+            """
+            using Microsoft.AspNetCore.Mvc;
+            public class MyController : Controller
+            {
+                public ActionResult<string> A()
+                {
+                    return Ok("String");
+                }
+
+                public ActionResult<int> B()
+                {
+                    return Ok(123);
+                }
+            }
+        """);
+    }
 }
