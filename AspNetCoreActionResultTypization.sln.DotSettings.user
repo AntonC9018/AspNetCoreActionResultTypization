@@ -14,5 +14,6 @@
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=98fc84d4_002D1e8a_002D4ed4_002Dbc13_002D7712ed76e3b8/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" Name="All tests from &amp;lt;AspNetCoreActionResultTypizer.Test&amp;gt; #2" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
   &lt;Project Location="D:\work\AspNetCoreActionResultTypization\AspNetCoreActionResultTypizer\AspNetCoreActionResultTypizer.Test" Presentation="&amp;lt;AspNetCoreActionResultTypizer.Test&amp;gt;" /&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
+	<s:Boolean x:Key="/Default/ResxEditorPersonal/CheckedGroups/=AspNetCoreActionResultTypizer_002ECodeFixes_002FCodeFixResources/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/ResxEditorPersonal/CheckedGroups/=AspNetCoreActionResultTypizer_002FResources/@EntryIndexedValue">True</s:Boolean>
 	<s:Boolean x:Key="/Default/ResxEditorPersonal/Initialized/@EntryValue">True</s:Boolean></wpf:ResourceDictionary>

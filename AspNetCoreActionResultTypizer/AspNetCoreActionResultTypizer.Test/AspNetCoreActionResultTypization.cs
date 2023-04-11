@@ -39,15 +39,16 @@ public class AspNetCoreActionResultTypizerUnitTest
     {
         await VerifyCS.VerifyAnalyzerAsync("""
             using Microsoft.AspNetCore.Mvc;
+            using System.Threading.Tasks;
             public class MyController : Controller
             {
-                public IActionResult MyAction()
+                public async Task<IActionResult> MyAction()
                 {
                     var x = "Hello World";
                     return Ok(x);
                 }
             }
-        """, AnalyzerDiagnostic.WithSpan(4, 16, 4, 29));
+        """, AnalyzerDiagnostic.WithSpan(5, 16, 5, 29));
     }
 
     [Fact]
@@ -98,6 +99,7 @@ public class AspNetCoreActionResultTypizerUnitTest
     {
         await VerifyCS.VerifyCodeFixAsync("""
             using Microsoft.AspNetCore.Mvc;
+            using System.Threading.Tasks;
             public class MyController : Controller
             {
                 public async Task<IActionResult> MyAction()
@@ -108,6 +110,7 @@ public class AspNetCoreActionResultTypizerUnitTest
             }
         """, """
             using Microsoft.AspNetCore.Mvc;
+            using System.Threading.Tasks;
             public class MyController : Controller
             {
                 public async Task<ActionResult<string>> MyAction()
@@ -158,6 +161,7 @@ public class AspNetCoreActionResultTypizerUnitTest
     {
         await VerifyCS.VerifyCodeFixAsync("""
             using Microsoft.AspNetCore.Mvc;
+            using System.Threading.Tasks;
             public class GenericType<T>         
             {
                 public T Value { get; set; }
@@ -172,6 +176,7 @@ public class AspNetCoreActionResultTypizerUnitTest
             }
         """, """
             using Microsoft.AspNetCore.Mvc;
+            using System.Threading.Tasks;
             public class GenericType<T>
             {
                 public T Value { get; set; }

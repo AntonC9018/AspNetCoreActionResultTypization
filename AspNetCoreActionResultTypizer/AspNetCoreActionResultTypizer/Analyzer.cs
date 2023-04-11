@@ -38,9 +38,9 @@ public class AspNetCoreActionResultTypizerAnalyzer : DiagnosticAnalyzer
 
     public class AnalysisInfo
     {
-        bool IsReturnTypeTask;
-        ITypeSymbol ArgumentType;
-        ITypeSymbol MethodReturnType;
+        public bool IsReturnTypeTask;
+        public ITypeSymbol ArgumentType;
+        public ITypeSymbol MethodReturnType;
 
         public AnalysisInfo(bool isReturnTypeTask, ITypeSymbol argumentType, ITypeSymbol methodReturnType)
         {
@@ -50,7 +50,7 @@ public class AspNetCoreActionResultTypizerAnalyzer : DiagnosticAnalyzer
         }
     }
 
-    public AnalysisInfo? GetAnalysisInfo(
+    public static AnalysisInfo? GetAnalysisInfo(
         Compilation compilation,
         SemanticModel semanticModel,
         MethodDeclarationSyntax methodDeclaration,
