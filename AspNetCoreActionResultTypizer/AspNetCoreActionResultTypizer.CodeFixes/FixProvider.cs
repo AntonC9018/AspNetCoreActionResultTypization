@@ -20,8 +20,9 @@ namespace AspNetCoreActionResultTypizer
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(AspNetCoreActionResultTypizerCodeFixProvider)), Shared]
     public class AspNetCoreActionResultTypizerCodeFixProvider : CodeFixProvider
     {
-        private static readonly ImmutableArray<string> _FixableDiagnosticIds = ImmutableArray.Create(AspNetCoreActionResultTypizerAnalyzer.DiagnosticId);
-        
+        private static readonly ImmutableArray<string> _FixableDiagnosticIds =
+            ImmutableArray.Create(AspNetCoreActionResultTypizerAnalyzer.DiagnosticId);
+
         public sealed override ImmutableArray<string> FixableDiagnosticIds => _FixableDiagnosticIds;
 
         public sealed override FixAllProvider GetFixAllProvider()
@@ -47,15 +48,17 @@ namespace AspNetCoreActionResultTypizer
 
             var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken);
             var analysisInfo = AspNetCoreActionResultTypizerAnalyzer.GetAnalysisInfo(
-                semanticModel!.Compilation, semanticModel, methodDeclaration, context.CancellationToken); 
+                semanticModel!.Compilation, semanticModel, methodDeclaration, context.CancellationToken);
 
-            // Register a code action that will invoke the fix.
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    title: CodeFixResources.CodeFixTitle,
-                    createChangedDocument: c => AspNetCoreActionResultTypizerAsync(context.Document, methodDeclaration, analysisInfo, c),
-                    equivalenceKey: nameof(CodeFixResources.CodeFixTitle)),
-                diagnostic);
+            var action = CodeAction.Create(
+                title: CodeFixResources.CodeFixTitle,
+                createChangedDocument: c =>
+                {
+                    return AspNetCoreActionResultTypizerAsync(context.Document, methodDeclaration, analysisInfo, c);
+                },
+                equivalenceKey: nameof(CodeFixResources.CodeFixTitle));
+            
+            context.RegisterCodeFix(action, diagnostic);
         }
 
         private static async Task<Document> AspNetCoreActionResultTypizerAsync(
@@ -65,28 +68,28 @@ namespace AspNetCoreActionResultTypizer
             CancellationToken cancellationToken)
         {
             var editor = await DocumentEditor.CreateAsync(document, cancellationToken);
-            
+
             var semanticModel = await document.GetSemanticModelAsync(cancellationToken);
             var compilation = semanticModel!.Compilation;
 
             var actionResultType = compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Mvc.ActionResult`1")!;
             var resolvedActionResultType = actionResultType.Construct(analysisInfo.ArgumentType);
 
-            var taskType = compilation.GetTypeByMetadataName("System.Threading.Tasks.Task`1")!; 
+            var taskType = compilation.GetTypeByMetadataName("System.Threading.Tasks.Task`1")!;
             ITypeSymbol newReturnType;
             if (analysisInfo.IsReturnTypeTask)
                 newReturnType = taskType.Construct(resolvedActionResultType);
             else
-                newReturnType = resolvedActionResultType;  
+                newReturnType = resolvedActionResultType;
 
             var generator = editor.Generator;
-            var typeSyntax = (TypeSyntax) generator.TypeExpression(newReturnType);
+            var typeSyntax = (TypeSyntax)generator.TypeExpression(newReturnType);
             typeSyntax = typeSyntax.WithAdditionalAnnotations(Simplifier.AddImportsAnnotation);
             typeSyntax = typeSyntax.WithTriviaFrom(methodDeclaration.ReturnType);
-            
+
             var newMethodDeclaration = methodDeclaration.WithReturnType(typeSyntax);
             editor.ReplaceNode(methodDeclaration, newMethodDeclaration);
-            
+
             var newDocument = editor.GetChangedDocument();
             return newDocument;
         }

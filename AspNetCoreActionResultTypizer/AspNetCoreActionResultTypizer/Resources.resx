@@ -122,11 +122,11 @@
     <comment>An optional longer localizable description of the diagnostic.</comment>
   </data>
   <data name="AnalyzerMessageFormat" xml:space="preserve">
-    <value>can be better typed</value>
+    <value>The return type can be improved</value>
     <comment>The format-able message the diagnostic displays.</comment>
   </data>
   <data name="AnalyzerTitle" xml:space="preserve">
-    <value>The return action type can be better typed.</value>
+    <value>Improve the return type of an action.</value>
     <comment>The title of the diagnostic.</comment>
   </data>
 </root>

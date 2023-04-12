@@ -60,7 +60,11 @@ public class AspNetCoreActionResultTypizerAnalyzer : DiagnosticAnalyzer
         var returnType = semanticModel.GetTypeInfo(returnTypeSyntax, cancellationToken).ConvertedType as INamedTypeSymbol;
         if (returnType is null)
             return null;
-        var iActionResultSymbol = compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Mvc.IActionResult")!;
+        
+        var iActionResultSymbol = compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Mvc.IActionResult");
+        if (iActionResultSymbol is null)
+            return null;
+        
         bool IsReturnTypeActionResult()
         {
             return SymbolEqualityComparer.Default.Equals(returnType, iActionResultSymbol);
@@ -93,7 +97,7 @@ public class AspNetCoreActionResultTypizerAnalyzer : DiagnosticAnalyzer
         // check if method is in a controller
         var controllerBaseSymbol = compilation.GetTypeByMetadataName("Microsoft.AspNetCore.Mvc.ControllerBase");
         if (controllerBaseSymbol is null)
-            throw new Exception("Expected to find Microsoft.AspNetCore.Mvc.ControllerBase");
+            return null;
                 
         var classDeclaration = methodDeclaration.Parent as ClassDeclarationSyntax;
         if (classDeclaration == null)

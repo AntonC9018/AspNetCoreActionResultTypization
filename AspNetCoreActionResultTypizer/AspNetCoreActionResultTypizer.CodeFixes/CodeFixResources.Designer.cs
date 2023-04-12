@@ -60,7 +60,7 @@ namespace AspNetCoreActionResultTypizer {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Fix the return type of an action.
+        ///   Looks up a localized string similar to Improve the return type of action.
         /// </summary>
         internal static string CodeFixTitle {
             get {

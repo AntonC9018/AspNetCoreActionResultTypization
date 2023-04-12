@@ -69,7 +69,7 @@ namespace AspNetCoreActionResultTypizer {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to can be better typed.
+        ///   Looks up a localized string similar to The return type can be improved.
         /// </summary>
         internal static string AnalyzerMessageFormat {
             get {
@@ -78,7 +78,7 @@ namespace AspNetCoreActionResultTypizer {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The return action type can be better typed..
+        ///   Looks up a localized string similar to Improve the return type of an action..
         /// </summary>
         internal static string AnalyzerTitle {
             get {
